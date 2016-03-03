@@ -1,7 +1,9 @@
 // Initialize SNS
-var app = require('express')(),
+var express = require('express'),
+	app = express(),
 	config = require('./config'),
-	aws = require('aws-sdk');
+	aws = require('aws-sdk'),
+	bodyParser = require('body-parser');
 
 aws.config.update({
 	region: config.region,
@@ -10,20 +12,26 @@ aws.config.update({
 });
 
 var sns = new aws.SNS(),
-	subscriber = require('./subscription')(sns, config);
+	subscriber = require('./subscription')(sns, config, require('./publish'));
 
-setTimeout(function() {
-	console.log(subscriber.getCurrentSubscribers());
-}, 1000);
+app.use(bodyParser.json());
+
+// setTimeout(function() {
+// 	console.log(subscriber.getCurrentSubscribers());
+// 	subscriber.notifySubscribers('Jiggle Master');
+// }, 1000);
 
 app.post('/publish', function(req, res) {
 	publish(req.body.msg);
 });
-app.post('/subscribe', function(req, res) {
 
+// {protocol: 'string', endpoint: 'string'}
+app.post('/subscribe', function(req, res) {
+	console.log(req.body);
+	subscriber.addSubscriber(req.body.protocol, req.body.endpoint);
 });
 app.post('/unsubscribe', function(req,res) {
 
 });
 
-app.listen(8003);
+app.listen(8005);

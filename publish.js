@@ -1,9 +1,9 @@
-var publish = function(message) {
-	sns.publish({
-		TopicArn: config.TopicArn,
-		Message: message
-	}, function(err, data) {
-		if (err) console.log(err);
-		else console.log(data);
-	});
+module.exports = {
+	publishMessage : function(sns, message, topicArn, subscribers) {
+		for (var i = 0; i < subscribers.length; i++) {
+			sns.publish({Message: message, TopicArn: topicArn}, function(err, data) {
+				console.log(data);
+			});
+		}
+	}
 };

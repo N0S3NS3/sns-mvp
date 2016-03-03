@@ -2,9 +2,10 @@ var SubscriptionManager = (function () {
 	this.subscriptions;
 	this.sns;
 	this.topicArn;
-	var Subscriber = function(owner, endpoint) {
+	this.publisher;
+	var Subscriber = function(owner, protocol, endpoint) {
 		this.owner = owner;
-		this.protocol = 'http';
+		this.protocol = protocol;
 		this.endpoint = endpoint;
 		Subscriber.prototype.getEndpoint = function() { return this.endpoint; }
 		Subscriber.prototype.getProtocol = function() { return this.protocol; }
@@ -12,38 +13,50 @@ var SubscriptionManager = (function () {
 	}
 
 	return {
-		initSubscriptionManager: function(sns, config) {
+		initSubscriptionManager: function(sns, config, publisher) {
 			var _this = this;
-			_this.sns = sns, _this.topicArn = config.topicArn, _this.subscriptions = [];
+			_this.sns = sns,
+			_this.topicArn = config.topicArn,
+			_this.subscriptions = [],
+			_this.publisher = publisher;
 			sns.listSubscriptionsByTopic({TopicArn: _this.topicArn}, function(err, data) {
 				if (err) return {status: 'error', msg: err};
 				for (var i = 0; i < data.Subscriptions.length; i++) {
-					_this.subscriptions.push(new Subscriber(data.Subscriptions[i].Owner, data.Subscriptions[i].Endpoint));
+					_this.subscriptions.push(new Subscriber(
+						data.Subscriptions[i].Owner,
+						data.Subscriptions[i].Protocol,
+						data.Subscriptions[i].Endpoint)
+					);
 				}
 			});
 		},
 		getCurrentSubscribers: function() {
 			return this.subscriptions;
 		},
-		addSubscriber: function(owner, endpoint) {
+		addSubscriber: function(protocol, endpoint) {
 			_this = this;
 			var subscriptionArguments = {
-				Protocol: 'http',
+				Protocol: protocol,
 				TopicArn: this.topicArn,
 				Endpoint: endpoint
 			};
-			var subscriber = new Subscriber(owner, endpoint);
-			sns.subscribe(subscriptionArguments, function(err, data) {
+			console.log(subscriptionArguments);
+			// var subscriber = new Subscriber(owner, protocol, endpoint);
+			this.sns.subscribe(subscriptionArguments, function(err, data) {
 				if (err) return {status: 'error', msg: err};
-				_this.subscriptions.push(subscriber);
+				console.log(data);
+				// _this.subscriptions.push(subscriber);
 			});
 		},
 		removeSubscriber: function(subscriptionArn) {
 
+		},
+		notifySubscribers: function(message) {
+			this.publisher.publishMessage(this.sns, message, this.topicArn, this.subscriptions);
 		}
 	}
 })();
-module.exports = function(sns, config) {
-	SubscriptionManager.initSubscriptionManager(sns, config);
+module.exports = function(sns, config, publisher) {
+	SubscriptionManager.initSubscriptionManager(sns, config, publisher);
 	return SubscriptionManager;
 };
