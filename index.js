@@ -9,20 +9,21 @@ aws.config.update({
 	secretAccessKey: config.secretAccessKey
 });
 
-var sns = new aws.SNS();
+var sns = new aws.SNS(),
+	subscriber = require('./subscription')(sns, config);
+
+setTimeout(function() {
+	console.log(subscriber.getCurrentSubscribers());
+}, 1000);
 
 app.post('/publish', function(req, res) {
 	publish(req.body.msg);
 });
+app.post('/subscribe', function(req, res) {
 
-var publish = function(message) {
-	sns.publish({
-		TopicArn: config.TopicArn,
-		Message: message
-	}, function(err, data) {
-		if (err) console.log(err);
-		else console.log(data);
-	});
-};
-// publish('ayyy');
+});
+app.post('/unsubscribe', function(req,res) {
+
+});
+
 app.listen(8003);
